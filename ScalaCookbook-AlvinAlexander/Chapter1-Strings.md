@@ -11,7 +11,7 @@ scala> "scala".drop(2).take(2).capitalize // Chaining methods is called fluent p
 res0: String = Al
 ```
 
-## 1.1 Testing String Equality
+## 1.1 Testing String Equality [COMMON]
 You can test if two String instances contain the same sequence of characters by using the `==` operator. This `==` method does not throw a `NullPointerException` if a String is `null`. However, calling a method on a `null` string can throw a `NullPointerException`.
 
 In Scala, you test object equality with the `==` method. In Java, you use the `equals` method to compare two objects.
@@ -29,7 +29,7 @@ val speech = """Four score and
 ```
 This results in a true multiline string, with a hidden `\n` character after the word “and” in the first line.
 
-## 1.3 Splitting Strings
+## 1.3 Splitting Strings [COMMON]
 You can use the `split` method that are available on `String` objects (like in Java).
 ```
 scala> "hello world".split(" ")
@@ -39,7 +39,7 @@ It is best to trim each string after splitting them. Use the `map` method to cal
 
 To split a string on whitespace characters: `s.split("\\s+")`
 
-## 1.4 Substituting Variables into Strings
+## 1.4 Substituting Variables into Strings [COMMON]
 To use basic string interpolation in Scala, precede your string with the letter s and include your variables inside the string, with each variable name preceded by a $ character
 ```
 scala> val name = "Fred"
@@ -110,7 +110,7 @@ Common printf style format specifiers
 
 For more `printf` cheat sheet: [click here](http://alvinalexander.com/programming/printf-format-cheat-sheet)
 
-## 1.5 Processing a String One Character at a Time
+## 1.5 Processing a String One Character at a Time [COMMON]
 Mostly, you can use the `map` or `foreach` methods, or a `for` loop. Here you can see what the Scala underscore character is useful for:
 
 ```
@@ -186,7 +186,7 @@ This code extracts the numeric field and the alphabetic field from the given str
 
 It’s important to note that with this technique, the regular expressions must match the entire user input.
 
-## 1.9 Accessing a Character in a String
+## 1.9 Accessing a Character in a String [COMMON]
 Use Scala's `Array` notation:
 ```
 scala> "hello"(0)
