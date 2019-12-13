@@ -139,5 +139,110 @@ address: java.lang.String = 123 Main Street Suite 101
 The findFirstIn method finds the first match:
 ```
 scala> val match1 = numPattern.findFirstIn(address)
-match1: Option[String] = Some(123)
+match1: Option[String] = Some(123) // Notice that this method returns an Option
 ```
+
+When looking for multiple matches, use the `findAllIn` method.
+```
+scala> val matches = numPattern.findAllIn(address)
+matches: scala.util.matching.Regex.MatchIterator = non-empty iterator
+```
+
+`findAllIn` returns an iterator, which lets you loop over the results.
+```
+scala> matches.foreach(println)
+123
+101
+```
+An alternative to using the `.r` method is to create a `Regex` object.
+```
+scala> val numPattern = new Regex("[0-9]+")
+numPattern: scala.util.matching.Regex = [0-9]+
+```
+
+An `Option[T]` is akin to a container that holds either zero or one values. If it contains a value, it will contain a `Some(T)` object. Otherwise, it will return a `None`.
+
+The normal way to work with an `Option` is to use one of these approaches:
+• Call `getOrElse` on the value.
+• Use the `Option` in a match expression.
+• Use the `Option` in a foreach loop
+
+## 1.7 Replacing Patterns in Strings
+A `String` is immutable, so you can't perform find-and-replace operations directly on it. So what you do is create a new `String` that contains the replaced contents.
+
+You can call `replaceFirst`/`replaceAll` on a `String` and assign the result to a new variable.
+
+## 1.8 Extracting Parts of a String That Match Patterns
+Define the regex patterns you want to extract, placing parentheses around them so you can extract them as regex groups.
+
+```
+val pattern = "([0-9]+) ([A-Za-z]+)".r
+```
+Then, extract the regex groups from the target string:
+```
+val pattern(count, fruit) = "100 Bananas"
+```
+This code extracts the numeric field and the alphabetic field from the given string as two separate variables, `count` and `fruit`.
+
+It’s important to note that with this technique, the regular expressions must match the entire user input.
+
+## 1.9 Accessing a Character in a String
+Use Scala's `Array` notation:
+```
+scala> "hello"(0)
+res1: Char = h
+
+scala> "hello"(1)
+res2: Char = e
+```
+
+## 1.10 Add Your Own Methods to the String Class
+In Scala 2.10, you define an implicit class, and then define methods within that class to implement the behaviour you want.
+
+First, define your implicit class and method(s):
+```
+scala> implicit class StringImprovements(s: String) {
+| def increment = s.map(c => (c + 1).toChar)
+| }
+defined class StringImprovements
+```
+Then invoke your method on any String:
+```
+scala> val result = "HAL".increment
+result: String = IBM
+```
+However, an implicit class must be defined in a scope where method definitions are allowed (not at the top level). This means that your implicit class must be defined inside a class, object, or package object.
+
+### Put the implicit class in an object
+For instance, you can place the `StringImprovements` implicit class in an object such as a `StringUtils` object:
+
+```
+package com.kevingomulia.utils
+
+object StringUtils {
+  implicit class StringImprovements(val s: String) {
+    def increment = s.map(c => (c + 1).toChar)
+  }
+}
+```
+
+Then you can use this `increment` method after importing: `import com.kevingomulia.utils.StringUtils._`.
+
+### Put the implicit class in a package object
+Place the code in a file named *package.scala*, in the appropriate directory. If you're using SBT, place the file in the *src/main/scala/com/kevingomulia/* directory of your proejct, containing the following code:
+```
+package com.kevingomulia
+
+package object utils {
+  implicit class StringImprovements(val s: String) {
+    def increment = s.map(c => (c + 1).toChar)
+  }
+}
+```
+The import statement is slightly different: `import com.kevingomulia.utils._`
+
+You can add new functionality to closed classes by writing implicit conversions and bringing them into scope (using the `import` statement) when you need them. A major benefit of this approach is that you don't have to extend existing classes to add the new functionality.
+
+It is recommended that the **return type of implicit method definitions should be annotated**.
+
+---
