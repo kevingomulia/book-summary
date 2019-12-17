@@ -228,4 +228,108 @@ class Socket(val timeout: Int) {
 }
 ```
 
-## 4.6
+## 4.6 Overriding Default Accessors and Mutators
+This is tricky because you can't override the getter and setter methods Scala generates for you, at least not if you want to stick with the Scala naming conventions.
+
+For example, this won't compile:
+```
+// error: this won't work
+class Person(private var name: String) {
+  // this line essentially creates a circular reference
+  def name = name
+  def name_=(aName: String) { name = aName }
+}
+```
+This code generates 3 errors on cpmilation:
+```
+Person.scala:3: error: overloaded method name needs result type
+  def name = name
+             ^
+
+Person.scala:4: error: ambiguous reference to overloaded definition,
+both method name_= in class Person of type (aName: String)Unit
+and method name_= in class Person of type (x$1: String)Unit
+match argument types (String)
+  def name_=(aName: String) { name = aName }
+      ^
+
+Person.scala:4: error: method name_= is defined twice
+  def name_=(aName: String) { name = aName }
+      ^
+three errors found
+```
+Both the constructor parameter and the getter method are named `name`, and Scala won't allow that.
+
+To solve this, change the name of the field you use in the class constructor so it won't collide with the name of the getter method you want to use. A common approach is to add a leading underscore to the parameter name. So, if you want to manually create a getter method called `name`, use the parameter name `_name` in the constructor, then declare your getter and setter methods according to Scala conventions:
+```
+class Person(private var _name: String) {
+  def name = _name              // accessor - getter
+  def name_=(aName: String) {    // mutator - setter
+    _name = aName
+  }
+}
+```
+Note that the **constructor parameter is declared `private` and `var`**. This keeps Scala from exposing that field to other classes and make the field mutable.
+
+The getter method is named `name`, and the setter method is named `name_=`, which conforms to the Scala convention and allows:
+```
+val p = new Person("John")
+p.name = "Adam"    // setter
+println(p.name)    // getter
+```
+
+As shown above, the recipe for overriding default getter and setter methods is:
+1. Create a private `var` constructor parameter with a name you want to reference from within your class. In the example above, the field is named `_name`.
+2. Define getter and setter names that you want other classes to use. Above, the getter name is `name`, and the setter name is `name_=`
+3. Modify the body of the getter and setter methods as desired.
+
+## 4.7 Preventing Getter and Setter Methods from Being Generated
+As above, define the field with the `private` or `private[this]` access modifiers.
+
+Defining a field as `private` limits the field so it's only available to instances of the same class, in this case instances of the `Stock` class. **Any instance of a `Stock` class** can access a **private field of any other `Stock` instance**.
+
+For example, the `isHigher` method in the `Stock` class can access the `price` field both in its object and in the other `Stock` object it is being compared to:
+```
+class Stock {
+// a private field can be seen by any Stock instance
+private var price: Double = _
+  def setPrice(p: Double) { price = p }
+  def isHigher(that: Stock): Boolean = this.price > that.price
+}
+```
+
+### Object-private fields
+Defining a field as `private[this]` makes the field *object-private*, which means that it can only be accessed from the object that contains it. It cannot be accessed by other instances of the same type.
+
+This makes it more private than the plain `private` setting.
+
+## 4.8 Assigning a Field to a Block or Function
+So you want to initialize a field in a class using a block of code, or by calling a function?
+
+You can set the field equal to the desired block of code or function. Optionally, define the field as `lazy` if the algorithm requires a long time to run.
+
+For example:
+```
+class Foo {
+  // set 'text' equal to the result of the block of code
+  val text = {
+    var lines = ""
+    try {
+      lines = io.Source.fromFile("/etc/passwd").getLines.mkString
+    } catch {
+      case e: Exception => lines = "Error happened"
+    }
+    lines
+  }
+
+  println(text)
+}
+object Test extends App {
+  val f = new Foo
+}
+```
+the assignment of the code block to the text field and the `println` statement are both in the body of the Foo class, they are in the class’s constructor, and will be executed when a new instance of the class is created. Compiling and running this example will either print the contents of the file, or the “Error happened” message from the catch block.
+
+When necessary, define a field like this to be `lazy`, which means it won't b e evaluated until it is accessed.
+
+## 4.9 
