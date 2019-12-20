@@ -342,4 +342,149 @@ You may be given an object that extends a known supertype, and then want to take
 This is a better method than just having a lot of `if/else` statements.
 
 ## 3.15 Working with a List in a Match Expression
-A `List` data structure is built from *cons* cells and ends in a `Nil` statement. You want to use this to your advantage when working with a match expression, such as when writing a recursive function. 
+A `List` data structure is built from *cons* cells and ends in a `Nil` statement. You want to use this to your advantage when working with a match expression, such as when writing a recursive function.
+
+Firstly, you can create a `List` in two ways:
+```
+val x = List(1, 2, 3)
+// OR
+val y = 1 :: 2 :: 3 :: Nil
+```
+When writing a recursive algorithm, you can take advantage of the fact that the last element in a `List` is a `Nil` object.
+
+For example, in the following `listToString` method, if the current element is not `Nil`, the method is **recursively with the remainder of the `List`**. If the current element is `Nil`, the recursive calls are stopped.
+```
+def listToString(list: List[String]): String = list match {
+  case s :: rest => s + " " + listToString(rest)
+  case Nil => ""
+}
+```
+Other examples:
+```
+def sum(list: List[Int]): Int = list match {
+  case Nil => 1
+  case n :: rest => n + sum(rest)
+}
+
+def multiply(list: List[Int]): Int = list match {
+  case Nil => 1
+  case n :: rest => n * multiply(rest)
+}
+```
+
+## 3.16 Matching One / More Exceptions with try/catch
+The Scala `try/catch/finally` syntax is similar to Java, but it uses the match expression approach in the catch block:
+```
+val s = "Foo"
+try {
+  val i = s.toInt
+} catch {
+  case e: FileNotFoundException => e.printStackTrace
+  case e: IOException => e.printStackTrace
+}
+```
+
+If you're not concerned about which specific exceptions might be thrown, and watch to catch them all and do something with them (such as logging them), use this syntax:
+```
+try {
+  // something
+} catch {
+  case t: Throwable => t.printStackTrace()
+  // Or ignore them like this:
+  case _: Throwable => println("Exception ignored")
+}
+```
+If you prefer to declare the exceptions that your method throws, or if you need to interact with Java, add the `@throws` annotation to your method definition:
+
+```
+@throws(classOf[NumberFormatException])
+def toInt(s: String): Option[Int] =
+  try {
+    Some(s.toInt)
+  } catch {
+    case e: NumberFormatException => throw e
+  }
+```
+
+## 3.17 Declaring a Variable Before Using It in a try/catch/finally Block
+What if you want to use an object in a `try` block, and need to access it in the `finally` portion of the block, such as when you need to call a `close` method on an object?
+
+In general, declare your field as an `Option` before `try/catch` block, then create a `Some` inside the `try` clause. For example:
+```
+import java.io._
+
+object CopyBytes extends App {
+
+  var in = None: Option[FileInputStream]
+  var out = None: Option[FileOutputStream]
+
+  try {
+    in = Some(new FileInputStream("/tmp/Test.class"))
+    out = Some(new FileOutputStream("/tmp/Test.class.copy"))
+    var c = 0
+    while ({c = in.get.read; c != −1}) {
+      out.get.write(c)
+    }
+  } catch {
+    case e: IOException => e.printStackTrace
+  } finally {
+    println("entered finally ...")
+    if (in.isDefined) in.get.close
+    if (out.isDefined) out.get.close
+  }
+
+}
+```
+In this code, `in` and `out` are assigned to `None` before the `try` clause, and then reassigned to `Some` values inside the `try` clause if everything succeeds. Therefore, it is safe to call `in.get` and `out.get` in the `while` loop, because if an exception had occurred, flow control would have switched to the `catch` clause.
+
+One key to this recipe is knowing the syntax for declaring `Option` fields that are not initially populated:
+```
+var in = None: Option[FileInputStream]
+var out = None: Option[FileOutputStream]
+```
+
+## 3.18 Creating Your Own Control Structures
+Let's say you want to create your own `whilst` loop, which you can use like this:
+```
+package foo
+
+import com.alvinalexander.controls.Whilst._
+
+object WhilstDemo extends App {
+  var i = 0
+  whilst (i < 5) {
+    println(i)
+    i += 1
+  }
+}
+```
+To create your own `whilst` control structure, define a function named `whilst` that takes two parameter lists. The first parameter list handles the test condition (`i < 5`) - and the second parameter list is the block of code the user wants to run.  
+```
+object Whilst {
+  @tailrec
+  def whilst(testCondition: => Boolean)(codeBlock: => Unit) {
+    if (testCondition) {
+      codeBlock
+      whilst(testCondition)(codeBlock)
+    }
+  }
+}
+```
+In this code, the `testCondition` is evaluated once, and if the condition is `true`, the `codeBlock` is executed, and then `whilst` is called recursively. This approach lets you keep checking the condition without needing a `while` or `for` loop.
+
+In a simpler example, you don't need recursion.
+
+For example, assume you want a control structure that takes two test conditions, and if both evaluate to true, you’ll run a block of code that’s supplied. An expression using that control structure might look like this:
+```
+doubleif(age > 18)(numAccidents == 0) { println("Discount!") }
+```
+
+In this case, define a function that takes three parameter lists:
+```
+// two 'if' condition tests
+def doubleif(test1: => Boolean)(test2: => Boolean)(codeBlock: => Unit) {
+  if (test1 && test2) {
+    codeBlock
+  }
+}
+```
