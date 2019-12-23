@@ -332,4 +332,9 @@ the assignment of the code block to the text field and the `println` statement a
 
 When necessary, define a field like this to be `lazy`, which means it won't b e evaluated until it is accessed.
 
-## 4.9 
+## 4.9 Setting Uninitialized var Field Types
+In Scala, you don't initialize a var as null like in Java's: `var x = null`
+
+In general, define the field as an `Option`. For example, `Option[String]` If the field hasn't been assigned, it becomes a `None`. Otherwise, it will be a `Some[String]`. This helps in case you want to call a method on the field, but you don't know if there will be a value there.
+
+## 4.10 Handling Constructor Parameters When Extending a Class 
