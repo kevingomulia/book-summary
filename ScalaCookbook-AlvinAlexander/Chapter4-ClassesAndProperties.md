@@ -337,4 +337,211 @@ In Scala, you don't initialize a var as null like in Java's: `var x = null`
 
 In general, define the field as an `Option`. For example, `Option[String]` If the field hasn't been assigned, it becomes a `None`. Otherwise, it will be a `Some[String]`. This helps in case you want to call a method on the field, but you don't know if there will be a value there.
 
-## 4.10 Handling Constructor Parameters When Extending a Class 
+## 4.10 Handling Constructor Parameters When Extending a Class
+Let's say that you want to extend a base class and you need to work with the constructor parameters declared in the base class as well as new parameters in the subclass.
+
+Declare your base class as usual with `val` or `var` constructor parameters. When defining a subclass constructor, leave the `val` or `var` declaration off of the fields that are common to both classes. Then define new constructor parameters in the subclass as `val` or `var`
+fields, as usual.
+
+For example, we have a `Person` base class:
+```
+class Person (var name: String, var address: Address) {
+  override def toString = if(address == null) name else s"$name @ $address"
+}
+```
+
+Next, define `Employee` as a subclass of `Person`, and it takes the constructor parameters `name, address,` and `age`.
+
+```
+class Employee (name: String, address: Address, var age: Int) extends Person (name, address) {
+  // rest of the class
+}
+```
+
+Since `name` and `address` parameters are common to the parent `Person` class, leave the `var` declaration off of those fields. Since `age` is new, declare it as a `var`.
+
+Scala already generated the getter and setter methods for the `name` and `address` fields in the `Person` class, so when you declare the `Employee` class, Scala won't attempt to generate methods for those fields. Therefore, the `Employee` class inherits that behavior from `Person`, as expected.
+
+## 4.11 Calling a Superclass Constructor
+In Scala, you can control the superclass constructor that's called by the primary constructor in a subclass, but you can't control the superclass constructor that's called by an auxiliary constructor in the subclass.
+
+For instance, in the following code, the `Dog` class is defined to call the primary constructor of the `Animal` class:
+
+```
+class Animal (var name: String) { ... }
+
+class Dog (name: String) extends Animal (name) { ... }
+```
+However, if the `Animal` class has multiple constructors, the primary constructor of the `Dog` class can call any of those constructors.
+
+For example:
+```
+// (1) primary constructor
+class Animal (var name: String, var age: Int) {
+  // (2) auxiliary constructor
+  def this (name: String) {
+    this(name, 0)
+  }
+
+  override def toString = s"$name is $age years old"
+}
+
+// calls the Animal one-arg constructor
+// specify in the constructor in the extends clause
+class Dog (name: String) extends Animal(name) {
+  println("Dog constructor called")
+}
+```
+Alternatively, it could call the two-arg primary constructor of the `Animal` class:
+```
+// call the two-arg constructor
+class Dog (name: String) extends Animal (name, 0) {
+  println("Dog constructor called")
+}
+```
+
+### Auxiliary constructors
+Since the first line of an auxiliary constructor must be a call to another constructor of the current class, there is no way for auxiliary constructors to call a superclass constructor.
+
+## 4.12 When to Use an Abstract Class
+Scala has traits, and a trait is more flexible than an abstract class. So when should you use an abstract class?
+
+There are two main reasons to use an abstract class in Scala:
+- You want to create a base class that requires constructor arguments.
+- The code will be called from Java code.
+
+**Traits don't allow constructor parameters**, so use an abstract class whenever a base behavior must have constructor parameters.
+
+Secondly, Java code can't call Scala traits (because Java doesn't have traits).
+
+Also, beware that a class can extend only one abstract class. In Scala, there is no need for an `abstract` keyword; simply leaving the body of the method undefined makes it abstract. This is also how abstract methods in traits are defined.
+
+## 4.13 Defining Properties in an Abstract Base Class (or Trait)
+You can declare both `val` or `var` fields in abstract class (or trait), and those fields can be abstract or have concrete implementations.
+
+### Abstract val and var fields
+The following example demonstrates an `Animal` trait with abstract `val` and `var` fields, along with a simple concrete method named `sayHello`, and an override of the `toString` method:
+```
+abstract class Pet (name: String) {
+  val greeting: String
+  var age: Int
+  def sayHello { println(greeting) }
+  override def toString = s"I say $greeting, and I'm $age"
+}
+```
+The following `Dog` and `Cat` classes extend `Animal` class and provide values for the `greeting` and `age` fields. Notice that the fields are again specified as `val` or `var`:
+```
+class Dog (name: String) extends Pet (name) {
+  val greeting = "Woof"
+  var age = 2
+}
+
+class Cat (name: String) extends Pet (name) {
+  val greeting = "Meow"
+  var age = 5
+}
+```
+You can declare abstract fields in an abstract class as either `val` or `var`. The way abstract fields work in abstract classes (or traits) is interesting:
+- An abstract `var` field results in getter and setter methods being generated for the field.
+- An abstract `val` field results in a getter method being generated for the field.
+- When you define an abstract field in an abstract class or trait, the Scala compiler does not create a field in the resulting code; it only generates the methods that correspond to the `val` or `var` field.
+
+Because of this, when you provide concrete values for these fields in your concrete classes, you **must** again define your fields to be `val` or `var`. Because the fields don't actually exist in the abstract base class (or trait), the `override` keyword is not necessary.
+
+As a result, you may see developers define a `def` that takes no parameters in the abstract base class rather than defining a `val`. They can then define a `val` in the concrete class, if desired. For example:
+```
+abstract class Pet (name: String) {
+  def greeting: String
+}
+
+class Dog (name: String) extends Pet (name) {
+  val greeting = "Woof"
+}
+
+object Test extends App {
+  val dog = new Dog("Fido")
+  println(dog.greeting)
+}
+```
+
+### Concrete val fields in abstract classes
+When defining a concrete `val` field in an abstract class, you can provide an initial value, and then override that value in the concrete subclasses:
+```
+abstract class Animal {
+  val greeting = { println("Animal"); "Hello" }
+}
+
+class Dog extends Animal {
+  override val greeting = { println("Dog"); "Woof" }
+}
+
+object Test extends App {
+  new Dog
+}
+```
+This results in :
+```
+Animal
+Dog
+```
+You can prevent a concrete `val` field in an abstract base class from being overridden in a subclass by declaring the field as `final val`.
+
+### Concrete var fields in abstract classes
+You can also give `var` fields an initial value in your trait or abstract class, then refer them in your concrete subclasses.
+
+The fields are declared and initialized in the abstract base class, so there is no need to redeclare the fields as `val` or `var` in the concrete subclass.
+
+## 4.14 Generating Boilerplate Code with Case Classes
+Define your class as a *case class*, defining any parameters it needs in its constructor:
+```
+// name and relation are `val` by default
+case class Person(name: String, relation: String)
+```
+Defining a class as a case class results in a lot of boilerplate code being generated, with the following benefits:
+- An `apply` method is generated, so you don't need to use the `new` keyword to create a new instance of the class.
+- Accessor methods are generated for the constructor parameters because case class constructor parameters are `val` by default. Mutator methods are generated for parameters declared as `var`.
+- A default `toString` method is generated.
+- An `unapply` method is generated, making it easy to use case classes in match expressions.
+- `equals` and `hashCode` methods are generated.
+- A `copy` method is generated.
+
+When you define a class as a case class, you don't have to use the `new` keyword to create a new instance.
+
+Case classes are primarily intended to create "immutable records" that you can easily use in pattern-matching expression.
+
+## 4.15 Defining an equals Method (Object Equality)
+Like Java, you define an `equals` method (and `hashCode` method) in your class to compare two instances. Unlike Java, you then use the `==` method to compare the equality of two instances.
+
+In Java, the `==` operator compares "reference equality" but in Scala, `==` is a method you use on each class to compare the equality of two instances, calling your `equals` method under the covers.
+
+An equivalence relation should have these three properties:
+- It is reflexive: for any instance x of type Any, x.equals(x) should return true.
+- It is symmetric: for any instances x and y of type Any, x.equals(y) should return true if and only if y.equals(x) returns true.
+- It is transitive: for any instances x, y, and z of type `AnyRef`, if `x.equals(y)` returns `true` and `y.equals(z)` returns `true`, then `x.equals(z)` should return true.
+
+## 4.16 Creating Inner Classes
+You can declare one class inside another class. For example:
+```
+class PandorasBox {
+  case class Thing (name: String)
+
+  var things = new collection.mutable.ArrayBuffer[Thing]()
+  things += Thing("Evil Thing #1")
+  things += Thing("Evil Thing #2")
+
+  def addThing(name: String) { things += new Things(name) }
+}
+```
+
+This lets users of `PandorasBox` access the collection of `things` inside the box, while code of `PandorasBox` generally doesn't have to worry about the concept of a `Thing`:
+```
+object ClassInAClassExample extends App {
+
+  val p = new PandorasBox
+  p.things.foreach(println)
+
+}
+```
+As shown, you can access the things in `PandorasBox` with the `things` method. You can also add new things to `PandorasBox` by calling the `addThing` method.
+
+In Scala, inner classes are bound to the outer object.
