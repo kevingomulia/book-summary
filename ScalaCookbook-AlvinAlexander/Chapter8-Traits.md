@@ -111,3 +111,37 @@ This approach is referred to as a *self type*.
 
 ## 8.7 Ensuring a Trait Can Only Be Added to a Type That Has a Specific Method
 You only want to allow a trait to be mixed into a type that has a method with a given signature.
+
+You can use a variation of the self-type syntax that lets you declare that any class that attempts to mix in the trait must implement the method you specify.
+
+For example, the `WarpCore` trait requires that any class that attempt to mix it must have an `ejectWarpCore` method:
+
+```
+trait WarpCore {
+  this: { def ejectWarpCore(password: String): Boolean } =>
+}
+```
+It further states that the `ejectWarpCore` method must accept a `String` argument and return a `Boolean` value.
+
+For a trait to require that a class have multiple methods, just add the additional method signatures inside the `this` block.
+
+This approach is known as a *structural* type.
+
+## 8.8 Adding a Trait to an Object Instance
+Rather than add a trait to entire class, you just want to add a trait to an object instance when the object is created.
+
+You can add the trait to the object when you construct it. For example:
+```
+class DavidBanner
+
+trait Angry {
+  println("Angry")
+}
+
+object Test extends App {
+  val hulk = new DavidBanner with Angry
+}
+```
+
+## 8.9 Extending a Java Interface Like a Trait
+In your Scala application, you can simply use the `extends` and `with` keywords to implement your Java interfaces as though they were Scala traits.
