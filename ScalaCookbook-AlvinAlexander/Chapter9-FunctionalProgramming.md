@@ -236,3 +236,50 @@ The answer is that Scala supports closure functionality, and this is how closure
 There are two *free variables* in the `sayHello` method: `name` and `hello`. The `name` variable is a formal parameter to the function; this is something you're used to.
 
 However, `hello` is not a formal parameter; it is a reference to a variable in the enclosing scope (similar to how a method in a Java class can refer to a field in the same class). Hence, the Scala compiler creates a closure that encompasses `hello`.
+
+## 9.6 Using Partially Applied Functions
+You want to eliminate repetitively passing variables into a function by (a) passing common variables into the function to (b) create a new function that is preloaded with those values, and then (c) use the new function, passing it only the unique variables it needs.
+
+Let's use an example: a simple `sum` function:
+```
+val sum = (a: Int, b: Int, c: Int) => a + b + c
+```
+What happens if you call the function without providing the third parameter?
+```
+val f = sum(1, 2, _: Int)
+```
+The resulting variable `f` is a *partially applied function*. `f` is now a function that implements the `function1` trait, meaning that it takes one argument. As such, when you give `f` an int, i.e. the number 3, you will get the sum of the three numbers.
+```
+scala> f(3)
+res0: Int = 6
+```
+This partially applied function is a variable that you can pass around. This variable is called a *function value*, and when you provide all the parameters needed to complete the function value, the original function is executed and a result is yielded.
+
+## 9.7 Creating a Function That Returns a Function
+1. Define a function that returns an algorithm (an anonymous function)
+2. Assign that to a new function
+3. and then call that new function
+
+This declares an anonymous function that takes a `String` argument and returns a `String`:
+```
+(s: String) => { prefix + " " + s }
+```
+You can return that anonymous function from the body of another function like this:
+```
+def saySomething(prefix: String) = (s: String) => {
+  prefix + " " + s
+}
+```
+Since `saySomething` returns a function, you can assign that resulting function to a variable.
+```
+val sayHello = saySomething("Hello")
+```
+
+The `sayHello` function is now equivalent to your anonymous function, with the `prefix` set to `hello`. Now you can call `sayHello` with a `String` parameter:
+```
+scala> sayHello("Al")
+res0: java.lang.String = Hello Al
+```
+You can use this approach any time you want to encapsulate an algorithm inside a function. Similar to Factory or Strategy pattern, the function your method returns can be based on the input parameter it receives.
+
+## 9.8 Creating Partial Functions 
