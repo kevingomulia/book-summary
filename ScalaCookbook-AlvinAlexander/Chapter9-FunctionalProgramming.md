@@ -282,4 +282,136 @@ res0: java.lang.String = Hello Al
 ```
 You can use this approach any time you want to encapsulate an algorithm inside a function. Similar to Factory or Strategy pattern, the function your method returns can be based on the input parameter it receives.
 
-## 9.8 Creating Partial Functions 
+## 9.8 Creating Partial Functions
+Let's say you want to define a function that will only work for a subset of possible input values, or you want to define a series of functions that only work for a subset of input values, and combine those functions to completely solve a problem.
+
+You can use a *partial function*. A partial function is a function that does not provide an answer for every possible input value it can be given. It provides an answer only for a subset of possible data, and defines the data it can handle.
+
+As an example, imagine a normal function that divides one number by another:
+```
+val divide = (x: Int) => 42 / x
+```
+When the input parameter is zero, this will throw an ArithmeticException, division by zero. Although you can handle this by catching and throwing an exception, Scala lets you define the `divide` function as a `PartialFunction`.
+```
+val divide = new PartialFunction[Int, Int] {
+  def apply(x: Int) = 42 / x
+  def isDefinedAt(x: Int) = x != 0
+}
+```
+Using this, you can test the function before attempting to use it:
+```
+scala> divide.isDefinedAt(1)
+res0: Boolean = true
+
+scala> if (divide.isDefinedAt(1)) divide(1)
+res1: AnyVal = 42
+
+scala> divide.isDefinedAt(0)
+res2: Boolean = false
+```
+While that `divide` function is explicit about what data it handles, partial functions are often written using `case` statements:
+```
+val divide2: PartialFunction[Int, Int] = {
+  case d: Int if d != 0 => 42 / d
+}
+```
+This code doesn't explicitly implement the `isDefinedAt` method, but it works exactly the same as the previous `divide` function definition.
+
+You can chain partial functions together. For instance, two functions are defined that can each handle a small number of `Int` inputs, and convert them to `String` results:
+```
+// converts 1 to "one", etc., up to 5
+val convert1to5 = new PartialFunction[Int, String] {
+  val nums = Array("one", "two", "three", "four", "five")
+  def apply(i: Int) = nums(i-1)
+  def isDefinedAt(i: Int) = i > 0 && i < 6
+}
+
+// converts 6 to "six", etc., up to 10
+val convert6to10 = new PartialFunction[Int, String] {
+  val nums = Array("six", "seven", "eight", "nine", "ten")
+  def apply(i: Int) = nums(i-6)
+  def isDefinedAt(i: Int) = i > 5 && i < 11
+}
+```
+You can combine them like this:
+```
+scala> val handle1to10 = convert1to5 orElse convert6to10
+handle1to10: PartialFunction[Int,String] = <function1>
+
+scala> handle1to10(3)
+res0: String = three
+
+scala> handle1to10(8)
+res1: String = eight
+```
+The `orElse` method comes from the Scala `PartialFunction` trait, which also includes the `andThen` method to further help chain partial functions together.
+
+## 9.9 A Real-World Example
+To demonstrate some of the techniques introduced in this chapter, the following example shows one way to implement Newton's Method.
+
+As you can see from the code, the method named `newtonsMethod` takes functions as its first two parameters. It also takes two other `Double` parameters, and returns a `Double`. The two functions that are passed in should be the original equation (`fx`) and the derivative of that equation (`fxPrime`).
+
+The method `newtonsMethodHelper` also takes two functions as parameters, so you can see how the functions are passed from `newtonsMethod` to `newtonsMethodHelper`.
+
+Here is the complete source code for this example:
+```
+object NewtonsMethod {
+  def main(args: Array[String]) {
+    driver
+  }
+
+  /**
+  * A "driver" function to test Newton's method.
+  * Start with (a) the desired f(x) and f'(x) equations,
+  * (b) an initial guess and (c) tolerance values.
+  */
+  def driver {
+    // the f(x) and f'(x) functions
+    val fx = (x: Double) => 3*x + math.sin(x) - math.pow(math.E, x)
+    val fxPrime = (x: Double) => 3 + math.cos(x) - math.pow(Math.E, x)
+
+    val initialGuess = 0.0
+    val tolerance = 0.00005
+
+    // pass f(x) and f'(x) to the Newton's Method function, along with
+    // the initial guess and tolerance
+    val answer = newtonsMethod(fx, fxPrime, initialGuess, tolerance)
+
+    println(answer)
+  }
+
+  /**
+  * Newton's Method for solving equations.
+  * @todo check that |f(xNext)| is greater than a second tolerance value
+  * @todo check that f'(x) != 0
+  */
+  def newtonsMethod(fx: Double => Double,
+                    fxPrime: Double => Double,
+                    x: Double,
+                    tolerance: Double): Double = {
+    var x1 = x
+    var xNext = newtonsMethodHelper(fx, fxPrime, x1)
+    while (math.abs(xNext - x1) > tolerance) {
+      x1 = xNext
+      println(xNext) // debugging (intermediate values)
+      xNext = newtonsMethodHelper(fx, fxPrime, x1)
+    }
+
+    xNext
+  }   
+
+  /**
+  * This is the "x2 = x1 - f(x1)/f'(x1)" calculation
+  */
+  def newtonsMethodHelper(fx: Double => Double,
+                          fxPrime: Double => Double,
+                          x: Double): Double = {
+    x - fx(x) / fxPrime(x)
+  }
+}
+```
+As you can see, a majority of this code involves defining functions, passing those functions to methods, and then invoking the functions from within a method.
+
+The method name `newtonsMethod` will work for any two functions `fx` and `fxPrime`, where `fxPrime` is the derivative of `fx` (within the limits of the “to do” items that are not implemented).
+
+To experiment with this example, try changing the functions `fx` and `fxPrime`, or implement the `@todo` items in `newtonsMethod`.
