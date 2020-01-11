@@ -1,4 +1,4 @@
-# Chapter 10 - Collections
+# Chapter 10 - Collections - I
 
 A goal of this chapter is to help you through this plethora of options to find the solutions you need. Recipes will help you decide which collections to use in different situations, and also choose a method to solve a problem.
 
