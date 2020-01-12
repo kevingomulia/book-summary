@@ -197,3 +197,79 @@ As shown, this creates a lazy view on the original list, so the tuple elements w
 Calling `zipWithIndex` alone trigger an extra iteration through the collection (traverses twice), and also creates an intermediary array of pairs. When using a `view`, the collection is only traversed when required so there is no performance loss.
 
 ## 10.12 Using Iterators
+In Scala, we hardly use the iterator method (with `hasNext()` and `next()` in Java). Scala collections have methods like `map` and `foreach` that let you implement algorithms more concisely.
+
+However, you might still run into an iterator. One of the best examples being the `io.Source.fromFile` method. An important part of using an iterator is knowing that it's exhausted after you use it. As you access each element, you mutate the iterator, and the previous element is discarded.
+```
+scala> val it = Iterator(1,2,3)
+it: Iterator[Int] = non-empty iterator
+
+scala> it.foreach(println)
+1
+2
+3
+```
+But when you try to run the same call again, you won't get any output because the iterator has been exhausted.
+
+## 10.13 Transforming One Collection to Another with for/yield
+You can use the `for/yield` construct and your algorithm to create a new collection. For instance:
+```
+scala> val a = Array(1, 2, 3, 4, 5)
+a: Array[Int] = Array(1, 2, 3, 4, 5)
+```
+You can create a copy of that collection by just "yielding" each element.
+```
+scala> for (e <- a) yield e
+res0: Array[Int] = Array(1, 2, 3, 4, 5)
+```
+Or you can modify them too:
+```
+scala> for (e <- a) yield e * 2
+res1: Array[Int] = Array(2, 4, 6, 8, 10)
+```
+This combination of a `for` loop and `yield` statement is known as *for comprehension* or *sequence comprehension*. It yields a new collection from an existing collection.
+
+In general, the collection type that's returned b y a for comprehension will be the same type that you begin with. However, this is not always the case.
+
+### Using gurads
+When you add guards to a for comprehension and want to write it as a multiline expression, use the curly braces.
+```
+for {
+  file <- files
+  if hasSoundFileExtension(file)
+  if !soundFileIsLong(file)
+} yield file
+```
+## 10.14 Transforming One Collection to Another with map
+Instead of using `for/yield` combination shown in the previous recipe, call the `map` method on your collection, passing it a function, an anonymous function, or method to transform each element. For example:
+```
+scala> val helpers = Vector("adam", "kim", "melissa")
+helpers: scala.collection.immutable.Vector[java.lang.String] =
+Vector(adam, kim, melissa)
+
+// the long form
+scala> val caps = helpers.map(e => e.capitalize)
+caps: scala.collection.immutable.Vector[String] = Vector(Adam, Kim, Melissa)
+
+// the short form
+scala> val caps = helpers.map(_.capitalize)
+caps: scala.collection.immutable.Vector[String] = Vector(Adam, Kim, Melissa)
+```
+
+For simple cases, using `map` is the same as using a basic `for/yield` loop. But once you add a guard, a `for/yield` loop is no longer directly equivalent to just a `map` method call. If you attempt to use an `if` statement in the algorithm you pass to a `map` method, you'll get a very different result:
+```
+scala> val fruits = List("apple", "banana", "lime", "orange", "raspberry")
+fruits: List[java.lang.String] = List(apple, banana, lime, orange, raspberry)
+
+scala> val newFruits = fruits.map( f =>
+ if (f.length < 6) f.toUpperCase
+)
+newFruits: List[Any] = List(APPLE, (), LIME, (), ())
+```
+You could filter the result after calling `map` to clean up the result:
+```
+scala> newFruits.filter(_ != ())
+res0: List[Any] = List(APPLE, LIME)
+```
+
+## Continued in Part 3
