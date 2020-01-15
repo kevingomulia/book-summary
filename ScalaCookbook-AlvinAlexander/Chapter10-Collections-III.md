@@ -62,4 +62,50 @@ scala> bag.flatMap(toInt).partition(_ > 3)
 res6: (List[Int], List[Int]) = (List(4),List(1, 2))
 ```
 
-## 10.17 Using filter to Filter a Collection 
+## 10.17 Using filter to Filter a Collection
+`filter` is one of the methods that can be used to filter the elements of an input collection to produce an output collection.
+
+To use `filter` on your collection, give it a predicate to filter the collection of elements as desired. Your predicate should accept a parameter of the same type that the collection holds, evaluate that element, and return `true` to keep the element in the new collection, or `false` to filter it out.
+
+Unique characteristics of `filter`:
+- `filter` walks through all of the elements in the collection; some of the other methods stop before reaching the end of the collection
+- `filter` lets you supply a predicate to filter the elements
+
+You can also put your algorithm in a separate method or function and then pass it into `filter` as a predicate.
+
+The two keys to using `filter` are:
+- Your algorithm should return true for the elements you want to keep and false for the other elements
+- Remember to assign the results of the filter method to a new variable; filter doesn’t modify the collection it’s invoked on
+
+## 10.18 Extracting a Sequence of Elements from a Collection
+Let's say you want to extract a sequence of contiguous elements from a collection, either by specifying a starting position and length, or a function.
+
+There are a few collection methods you can use to extract a contiguous list of elements from a sequence, including: `drop, dropWhile, head, headOption, init, last, lastOption, slice, tail, take, takeWhile`.
+
+- `drop` method drops the number of elements you specify from the beginning of the sequence
+- `dropWhile` method drops elements as long as the predicate you supply returns `true`
+- `dropRight` method works like `drop`, but starts from the end of the sequence
+- `take` extracts the first N elements from a sequence
+- `takeWhile` returns elements as long as the predicate you supply returns `true`
+- `takeRight` works like `take`, but starts from the end of the sequence
+- `slice(from, until)` returns a sequence beginning at the index `from` until the index `until`, not including `until`.
+
+## 10.19 Splitting Sequences into Subsets (groupBy, partition, etc)
+Use `groupBy, partition, span`, or `splitAt` methods to partition a sequence into subsequences. The `sliding` and `unzip` methods can also be used to split sequences into subsequences, though `sliding` can generate many subsequences, and `unzip` primarily works on a sequence of `Tuple2` elements.
+
+The `groupBy, partition,` and `span` methods let you split a sequence into subsets according to a function, whereas `splitAt` lets you split a collection into two sequences by providing an index number.
+
+The `groupBy` method partitions the collection into a Map of subcollections based on your function - a `true` map containing the elements for which your predicate returned true, and a `false` map.
+
+The `partition`, `span`, and `splitAt` methods create a `Tuple2` of sequences that are of the same type as the original collection. The partition method creates two lists, one containing values for which your predicate returned `true`, and the other containing the elements that returned `False`.
+
+The `span` method returns a `Tuple2` based on your predicate `p`, consisting of “the longest prefix of this list whose elements all satisfy `p`, and the rest of this list.” The `splitAt` method splits the original list according to the element index value you supplied.
+
+When a `Tuple2` of sequences is returned, its two sequences can be accessed like this:
+```
+scala> val (a,b) = x.partition(_ > 10)
+a: List[Int] = List(15, 20, 12)
+b: List[Int] = List(10, 5, 8)
+```
+
+## 10.20 Walking Through a Collection with the reduce and fold Methods 
