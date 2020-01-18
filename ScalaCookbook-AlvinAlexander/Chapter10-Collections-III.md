@@ -108,4 +108,174 @@ a: List[Int] = List(15, 20, 12)
 b: List[Int] = List(10, 5, 8)
 ```
 
-## 10.20 Walking Through a Collection with the reduce and fold Methods 
+## 10.20 Walking Through a Collection with the reduce and fold Methods
+Let's say you want to walk through all of the elements in a sequence, comparing two neighboring elements as you walk through the collection.
+
+You can use `reduceLeft, foldLeft, reduceRight`, and `foldRight` methods to walk through elements in a sequence, applying your function to neighboring elements to yield a new result, which is then compared to the next element in the sequence to yield a new result. For example:
+
+```
+scala> val a = Array(12, 6, 15, 2, 20, 9)
+scala> a.reduceLeft(_ max _)
+
+--> compare 12 to 6, 12 is larger (12, 15, 2, 20, 9)
+--> compare 12 to 15, 15 is larger (15, 2, 20, 9)
+... (15, 20, 9)
+... (20, 9)
+... (20)
+```
+
+You can write your own function and provide it into `reduceLeft`. One subtle but important note about reduceLeft: the function (or method) you supply must return the same data type that’s stored in the collection. This is necessary so `reduceLeft` can compare the result of your function to the next element in the collection.
+
+`foldLeft` works just like `reduceLeft`, but it lets you set a seed value to be used for the first element.
+
+`scanLeft` (and `scanRight`) walks through a sequence in a manner similar to `reduceLeft` and `reduceRight`, but they return a sequence instead of a single value.
+
+`scanLeft` produces a collection containing cumulative results of applying the operator going left to right.
+For example:
+```
+val product = (x: Int, y: Int) => {
+  val result = x * y
+  println(s"multiplied $x by $y to yield $result")
+  result
+}
+
+scala> val a = Array(1, 2, 3)
+a: Array[Int] = Array(1, 2, 3)
+
+scala> a.scanLeft(10)(product)
+multiplied 10 by 1 to yield 10
+multiplied 10 by 2 to yield 20
+multiplied 20 by 3 to yield 60
+res0: Array[Int] = Array(10, 10, 20, 60)
+```
+
+## 10.21 Extracting Unique Elements from a Sequence
+You can use `distinct` method on the collection:
+```
+scala> val x = Vector(1, 1, 2, 3, 3, 4)
+x: scala.collection.immutable.Vector[Int] = Vector(1, 1, 2, 3, 3, 4)
+
+scala> val y = x.distinct
+y: scala.collection.immutable.Vector[Int] = Vector(1, 2, 3, 4)
+```
+The `distinct` method returns a new collection with the duplicate values removed. You have to assign the result to a new variable - this is required for both immutable and mutable collections.
+
+You can also convert a collection to a `Set` by calling the `toSet` method.
+
+### Using distinct with your own classes
+To use `distinct` with your own class, you need to implement the `equals` and `hashCode` methods.
+
+## 10.22 Merging Sequential Collections
+There are a few options to merging two sequences into one sequence:
+- keeping all of the original elements,
+- finding the elements that are common to both collections
+- finding the difference between the two sequences
+
+Depending on your needs, in a nutshell:
+- The `++=` method merge a sequence into a mutable sequence
+- The `++` method merge two mutable or immutable sequences.
+- Use collection methods like `union`, `diff`, and `intersect`
+
+The `++=` method merges a sequence into a mutable collection like an `ArrayBuffer`:
+```
+scala> val a = collection.mutable.ArrayBuffer(1,2,3)
+a: scala.collection.mutable.ArrayBuffer[Int] = ArrayBuffer(1, 2, 3)
+
+scala> a ++= Seq(4,5,6)
+res0: a.type = ArrayBuffer(1, 2, 3, 4, 5, 6)
+```
+
+The `++` method merges two mutable/immutable collections while assigning the result to a new variable:
+```
+scala> val a = Array(1,2,3)
+a: Array[Int] = Array(1, 2, 3)
+
+scala> val b = Array(4,5,6)
+b: Array[Int] = Array(4, 5, 6)
+
+scala> val c = a ++ b
+c: Array[Int] = Array(1, 2, 3, 4, 5, 6)
+```
+
+Methods like `union` and `intersect` combine sequences to create a resulting sequence. The `diff` method results depend on which sequence it's called on (`a diff b` is different from `b diff a`).
+
+## 10.23 Merging Two Sequential Collections into Pairs with zip
+This is useful when you want to merge data from two sequential collections into a collection of key/value pairs.
+
+The `zip` method joins two sequences into one like this:
+```
+scala> val women = List("Wilma", "Betty")
+women: List[String] = List(Wilma, Betty)
+
+scala> val men = List("Fred", "Barney")
+men: List[String] = List(Fred, Barney)
+
+scala> val couples = women zip men
+couples: List[(String, String)] = List((Wilma,Fred), (Betty,Barney))
+```
+This creates an Array of Tuple2 elements, which is a merger of the two original sequences.
+
+If one collection contains more items than the other collection, the items at the end of the longer collection will be dropped. You can use the `unzip` method to reverse `zip`
+
+## 10.24 Creating a Lazy View on a Collection
+You're working with a large collection a want to create a "lazy" version of it so it will only compute and return results as they are needed.
+
+Except for the `Stream` class, whenever you create an instance of a Scala collection class, you're creating a *strict* version of the collection. You can optionally create a *view* on a collection to make it non-strict (a.k.a. lazy)
+
+For instance:
+```
+scala> 1 to 100
+res0: scala.collection.immutable.Range.Inclusive =
+  Range(1, 2, 3, 4, ... 98, 99, 100)
+
+scala> (1 to 100).view
+res0: java.lang.Object with
+  scala.collection.SeqView[Int,scala.collection.immutable.IndexedSeq[Int]] =
+  SeqView(...)
+```
+Creating the `Range` with the view shows something called a `SeqView` instead of a `Range`.
+
+The signature of the `SeqView` shows:
+- `Int` is the type of the view's elements
+- `scala.collection.immutable.IndexedSeq[Int]` portion of the output indicates the type you'll get if you `force` the collection back to a strict collection.
+```
+scala> val x = view.force
+x: scala.collection.immutable.IndexedSeq[Int] =
+  Vector(1, 2, 3, ... 98, 99, 100)
+```
+
+### Use cases
+There are two primary use cases for using a view:
+- Performance
+- To treat a collection like a database view
+
+The following examples show how a collection view works like a database view:
+```
+// create a normal array
+scala> val arr = (1 to 10).toArray
+arr: Array[Int] = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+
+// create a view on the array
+scala> val view = arr.view.slice(2, 5)
+view: scala.collection.mutable.IndexedSeqView[Int,Array[Int]] = SeqViewS(...)
+
+// modify the array
+scala> arr(2) = 42
+
+// the view is affected:
+scala> view.foreach(println)
+42
+4
+5
+
+// change the elements in the view
+scala> view(0) = 10
+scala> view(1) = 20
+scala> view(2) = 30
+
+// the array is affected:
+scala> arr
+res0: Array[Int] = Array(1, 2, 10, 20, 30, 6, 7, 8, 9, 10)
+```
+
+## 10.25 Populating a Collection with a Range 
