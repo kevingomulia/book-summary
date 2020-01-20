@@ -278,4 +278,144 @@ scala> arr
 res0: Array[Int] = Array(1, 2, 10, 20, 30, 6, 7, 8, 9, 10)
 ```
 
-## 10.25 Populating a Collection with a Range 
+## 10.25 Populating a Collection with a Range
+You can call the `range` method on sequences that support it, or create a `Range` and convert it to the sequence.
+
+In the first approach, the `range` method is available on the companion object of supported types like `Array`, `List`, `Vector`, `ArrayBuffer`, and others:
+```
+scala> Array.range(1, 5)
+res0: Array[Int] = Array(1, 2, 3, 4)
+
+scala> List.range(0, 10)
+res1: List[Int] = List(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+scala> Vector.range(0, 10, 2)
+res2: collection.immutable.Vector[Int] = Vector(0, 2, 4, 6, 8)
+```
+For the second approach:
+```
+scala> val a = (0 until 10).toArray
+a: Array[Int] = Array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)
+
+scala> val list = 1 to 10 by 2 toList
+list: List[Int] = List(1, 3, 5, 7, 9)
+
+scala> val list = (1 to 10).by(2).toList
+list: List[Int] = List(1, 3, 5, 7, 9)
+```
+Using this approach is useful for some collections, like Set, which don’t offer a range method.
+
+## 10.26 Creating and Using Enumerators
+You can `extend` the `scala.Enumeration` class to create your enumeration:
+```
+package com.acme.app {
+  object Margin extends Enumeration {
+    type Margin = Value
+    val TOP, BOTTOM, LEFT, RIGHT = Value
+  }
+}
+```
+Then, import it to your application
+```
+object Main extends App {
+  import com.acme.app.Margin._
+
+  // use an enumeration value in a test
+  var currentMargin = TOP
+
+  // later in the code ...
+  if (currentMargin == TOP) println("working on Top")
+
+  // print all the enumeration values
+  import com.acme.app.Margin
+  Margin.values foreach println
+}
+```
+Enumerations are useful tool for creating groups of constants, such as days of the week, weeks of the year, and many other situations where you have a group of related, constant values.
+
+## 10.27 Tuples, for when you just need a bag of things
+Simply put, you just want to create a small collection of heterogeneous elements. For this, you can use a tuple.
+
+A tuple gives you a way to store a group of heterogeneous items in a container. Simply create a tuple by enclosing the desired elements between parentheses. For example, this is a two element tuple:
+```
+scala> val d = ("Debi", 95)
+d: (String, Int) = (Debi,95)
+```
+You can access tuple elements using an underscore construct:
+```
+scala> t._1
+res1: java.lang.String = Debi
+
+scala> t._2
+res2: Int = 95
+```
+A common use case for a tuple is returning multiple items from a method.
+
+Though a tuple isn't a collection, you can treat it as one when needed by creating an iterator:
+```
+scala> val x = ("AL" -> "Alabama")
+x: (java.lang.String, java.lang.String) = (AL,Alabama)
+
+scala> val it = x.productIterator
+it: Iterator[Any] = non-empty iterator
+
+scala> for (e <- it) println(e)
+AL
+Alabama
+```
+Like any other iterator, after it's used once, it will be exhausted.
+
+## 10.28 Sorting a Collection
+Let's say you want to sort a sequential collection, or you want to implement the `Ordered` trait in a custom class so you can use the `sorted` method, or operators like <, <=, >, and >= to compare instances of your class.
+
+You can use `sorted` or `sortWith` methods to sort a collection.
+
+The `sorted` method can sort collections with type `Double`, `Float`, `Int`, and any other type that has an implicit `scala.math.Ordering`
+
+The “rich” versions of the numeric classes (like `RichInt`) and the `StringOps` class all extend the `Ordered` trait, so they can be used with the sorted method.
+
+The `sortWith` method lets you provide your own sorting function. For example:
+```
+scala> List(10, 5, 8, 1, 7).sortWith(_ < _)
+res1: List[Int] = List(1, 5, 7, 8, 10)
+
+scala> List(10, 5, 8, 1, 7).sortWith(_ > _)
+res2: List[Int] = List(10, 8, 7, 5, 1)
+
+scala> List("banana", "pear", "apple", "orange").sortWith(_.length < _.length)
+res5: List[java.lang.String] = List(pear, apple, banana, orange)
+
+scala> List("banana", "pear", "apple", "orange").sortWith(_.length > _.length)
+res6: List[java.lang.String] = List(banana, orange, apple, pear)
+```
+If your sorting method gets long, first declare it as a method, and then use it as the parameter for `sortWith`.
+
+If the type a sequence is holding doesn’t have an implicit `Ordering`, you won’t be able to sort it with `sorted`. You can write a simple anonymous function to sort.
+
+IF you'd rather use the `sorted` method, you can mix the `Ordered` trait into the class, and implement a `compare` method.
+
+## 10.29 Converting a Collection to a String with mkString
+You want to convert elements of a collection to a `String`, possible adding field separator, prefix, and suffix.
+
+You can use the `mkString` method to print a collection as a `String`. Given:
+```
+val a = Array("apple, "banana", "cherry")
+
+scala> a.mkString
+res1: String = applebananacherry
+```
+
+You can add a separator:
+```
+scala> a.mkString(", ")
+res3: String = apple, banana, cherry
+```
+If you happen to have a list of lists that you want to convert to a `String`, such as the
+following array of arrays, first flatten the collection, and then call `mkString`:
+```
+scala> val a = Array(Array("a", "b"), Array("c", "d"))
+a: Array[Array[java.lang.String]] = Array(Array(a, b), Array(c, d))
+
+scala> a.flatten.mkString(", ")
+res5: String = a, b, c, d
+```
