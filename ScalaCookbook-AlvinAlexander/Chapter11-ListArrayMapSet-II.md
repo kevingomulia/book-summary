@@ -173,4 +173,107 @@ scala> states.valuesIterator.exists(_.contains("foo"))
 ```
 When chaining methods like this together, be careful about intermediate results.
 
-## 11.21 
+## 11.21 Filtering a Map
+You can use the `retain` method to define the elements to retain when using a mutable map, and use `filterKeys` or `filter` to filter the elements in a mutable/immutable map (assign the result to a new variable for immutable maps).
+
+```
+scala> var x = collection.mutable.Map(1 -> "a", 2 -> "b", 3 -> "c")
+x: scala.collection.mutable.Map[Int,String] = Map(2 -> b, 1 -> a, 3 -> c)
+
+scala> x.retain((k,v) => k > 1)
+res0: scala.collection.mutable.Map[Int,String] = Map(2 -> b, 3 -> c)
+
+scala> x
+res1: scala.collection.mutable.Map[Int,String] = Map(2 -> b, 3 -> c)
+```
+`retain` modifies a mutable map in place. Your algorithm can test both the key and value of each element to decide which elements to retain in the map.
+
+The `transform` method doesn't filter a map, but it lets you transform the elements in a mutable map.
+
+### Mutable and immutable maps
+You can use a predicate with the `filterKeys` methods to define which map elements to retain. When using this method, remember to assign the filtered result to a new variable.
+
+The predicate you supply should return `true` for the elements you want to keep in the new collection and `false` for the elements you don't want.
+
+You can also use all the filtering methods that are shown in Chapter 10.
+
+## 11.22 Sorting an Existing Map by Key or Value
+You can sort the map by *key* from low to high using `sortBy`. You can also sort the keys in ascending or descending order using `sortWith`.
+
+You can sort the map by *value* using `sortBy`. Similarly, you can also sort the keys in ascending or descending order using `sortWith`.
+
+## 11.23 Finding the Largest Key or Value in a Map
+You can use the `max` method on the map. Alternatively, use the map's `keysIterator` or `valuesIterator` with other approaches, depending on your needs.
+
+You can call `keysIterator` to get an iterator over the map keys, and call its `max` method: `mapName.keysIterator.max`.
+
+You can find the same maximum using `keysIterator` and `reduceLeft`:
+```
+mapName.keysIterator.reduceLeft((x,y) => if (x > y) x else y)
+```
+This approach is flexible, because if your definition of “largest” is the longest string, you can compare string lengths instead:
+
+```
+mapName.keysIterator.reduceLeft((x,y) => if (x.length > y.length) x else y)
+```
+
+## 11.24 Adding Elements to a Set
+Mutable and immutable sets are handled differently.
+
+### Mutable set  
+Add elements to a *mutable* set with the `+=`, `++=`, and `add` methods
+```
+// use var with mutable
+scala> var set = scala.collection.mutable.Set[Int]()
+set: scala.collection.mutable.Set[Int] = Set()
+
+// add one element
+scala> set += 1
+res0: scala.collection.mutable.Set[Int] = Set(1)
+
+// add multiple elements
+scala> set += (2, 3)
+res1: scala.collection.mutable.Set[Int] = Set(2, 1, 3)
+
+// notice that there is no error when you add a duplicate element
+scala> set += 2
+res2: scala.collection.mutable.Set[Int] = Set(2, 6, 1, 4, 3, 5)
+
+// add elements from any sequence (any TraversableOnce)
+scala> set ++= Vector(4, 5)
+res3: scala.collection.mutable.Set[Int] = Set(2, 1, 4, 3, 5)
+
+scala> set.add(6)
+res4: Boolean = true
+
+scala> set.add(5)
+res5: Boolean = false
+```
+
+The last two examples demonstrate a unique characteristic of the `add` method on a set: It returns `true` or `false` depending on whether or not the element was added. The other methods silently fail if you attempt to add an element that's already in the set.
+
+You can test to see whether a set contains an element before adding it by using the `.contains` method.
+
+### Immutable set
+Firstly, create an immutable set:
+```
+scala> val s1 = Set(1, 2)
+s1: scala.collection.immutable.Set[Int] = Set(1, 2)
+```
+Create a new set by adding elements to a previous set with the `+` and `++` methods:
+```
+// add one element
+scala> val s2 = s1 + 3
+s2: scala.collection.immutable.Set[Int] = Set(1, 2, 3)
+
+// add multiple elements (+ method has a varargs field)
+scala> val s3 = s2 + (4, 5)
+s3: scala.collection.immutable.Set[Int] = Set(5, 1, 2, 3, 4)
+
+// add elements from another sequence
+scala> val s4 = s3 ++ List(6, 7)
+s4: scala.collection.immutable.Set[Int] = Set(5, 1, 6, 2, 7, 3, 4)
+```
+You can also declare your variable as a `var`, and reassign the resulting set back to the same variable.
+
+## 11.25 Deleting Elements from Sets 
