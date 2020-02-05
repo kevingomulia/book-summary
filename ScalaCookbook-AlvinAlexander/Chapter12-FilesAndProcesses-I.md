@@ -148,3 +148,125 @@ January, 10000.00, 9000.00, 1000.00
 February, 11000.00, 9500.00, 1500.00
 March, 12000.00, 10000.00, 2000.00
 ```
+
+You can process the lines in the file with the following:
+```
+object CSVDemo extends App {
+
+  println("Month, Income, Expenses, Profit")
+  val bufferedSource = io.Source.fromFile("/tmp/finance.csv")
+  for (line <- bufferedSource.getLines) {
+    val cols = line.split(",").map(_.trim)
+    // do whatever you want with the columns here
+    println(s"${cols(0)}|${cols(1)}|${cols(2)}|${cols(3)}")
+  }
+  bufferedSource.close
+}
+```
+The magic is in this line:
+```
+val cols = line.split(",").map(_.trim)
+```
+The resulting output:
+```
+January|10000.00|9000.00|1000.00
+February|11000.00|9500.00|1500.00
+March|12000.00|10000.00|2000.00
+```
+
+If you prefer named variables, you can change the loop to look like this:
+```
+for (line <- bufferedSource.getLines) {
+  val Array(month, revenue, expenses, profit) = line.split(",").map(_.trim)
+  println(s"$month $revenue $expenses $profit")
+}
+```
+There are a few other ways to deal with a CSV file as shown in the book. Check it out for more details.
+
+## 12.6 Pretending that String Is a File
+This is more for the purpose of testing.
+
+Because `Scala.fromFile` and `Scala.fromString` both extend `scala.io.Source`, they are easily interchangeable. As long as your method takes a `Source` reference, you can pass it the `BufferedSource` you get from calling `Source.fromFile`, or the `Source` you get from calling `Source.fromString`.
+
+For example, this takes a `Source` object and prints the lines it contains:
+```
+import io.Source
+
+def printLines(source: Source) {
+  for (line <- source.getLines) {
+    println(line)
+  }
+}
+```
+It can be called when the source is constructed from a String:
+```
+val s = Source.fromString("foo\nbar\n")
+printLines(s)
+```
+It can also be called when the source is a file:
+```
+val f = Source.fromFile("/Users/Al/.bash_profile")
+printLines(f)
+```
+
+## 12.7 Using Serialization
+To make a Scala class serializable, extend the `Serializable` trait and add the `@SerialVersionUID` annotation to the class:
+```
+@SerialVersionUID(100L)
+class Stock(var symbol: String, var price: BigDecimal) extends Serializable {
+  // code here
+}
+```
+After marking the class serializable, use the same techniques to write and read the objects as you did in Java, including the Java “deep copy” technique that uses serialization.
+
+
+## 12.8 Listing Files in a Directory
+Scala doesn't offer any different methods for working with directories, so use the `listFiles` method of the Java `File` class.
+
+This method creates a list of all files in a directory:
+```
+def getListOfFiles(dir: String):List[File] = {
+  val d = new File(dir)
+  if (d.exists && d.isDirectory) {
+    d.listFiles.filter(_.isFile).toList
+  } else {
+    List[File]()
+  }
+}
+```
+If you want to limit the list of files based on their extension, in Java, you'd implement a `FileFilter` with an `accept` method. In Scala, you can write the equivalent code without requiring a `FileFilter`.
+
+Assuming the `file` you're given represents a directory that is known to exist, the following method shows how to filter a set of files based on their extension:
+
+```
+import java.io.File
+
+def getListOfFiles(dir: File, extensions: List[String]): List[File] =
+{
+  dir.listFiles.filter(_.isFile).toList.filter { file =>
+    extensions.exists(file.getName.endsWith(_))
+  }
+}
+```
+You can call this method to list all WAV and MP3 files in a given directory like this:
+```
+val okFileExtensions = List("wav", "mp3")
+val files = getListOfFiles(new File("/tmp"), okFileExtensions)
+```
+
+## 12.9 List Subdirectories in a Directory
+Use a combination of the Java `File` class and Scala collection methods:
+```
+def getListOfSubDirectories(dir: File): List[String] =
+  dir.listFiles
+     .filter(_.isDirectory)
+     .map(_.getName)
+     .toList
+```
+This algorithm does the following:
+- Uses the `listFiles` method of the `File` class to list all the files in the given directory as an `Array[File].`
+- The `filter` method trims that list to contain only directories
+- `map` calls `getName` on each file to return an array of directory names (instead of `File` instances)
+- `toList` converts that to a `List[String]`
+
+This problem provides a good way to demonstrate the differences between writing code in a functional style versus in an imperative style.
