@@ -54,3 +54,70 @@ Giter8 works by downloading project templates from GitHub. Giter8 requires SBT a
 In case you face an error `Unable to find github repository: ...` when running g8, simply upgrade Conscript and Giter8 to their latest versions.
 
 ## 18.2 Compiling, Running, and Packaging a Scala Project with SBT
+Create a directory layout to match what SBT expects, then run `sbt compile` to compile your project, `sbt run` to run your project, and `sbt package` to package your project as a JAR file.
+
+Unlike Java, in SCala, the file's package name doesn't have to match the directory name. From the root directory of the project, you can compile, run, and package the project.
+
+Description of the most common SBT commands:
+|Command|Description|
+|---|---|
+|clean|Removes all generated files from the *target* directory|
+|compile|Compiles source code that are in *src/main/scala*, *src/main/java*, and the root directory of the project|
+|~ compile|Automatically recompiles source code files while you're running SBT in interactive mode|
+|console|Compiles the source code files in the project, puts them on the classpath, and starts the Scala REPL|
+|doc|Generates API documentation from your Scala source code using `scaladoc`|
+|help <command>|Issued by itself, the `help` command lists the common commands that are currently available. When given a command, `help` provides a description of that command.|
+|inspect <setting>|Displays information about <setting>. For instance, `inspect library-dependencies` displays information about the `libraryDependencies` setting.|
+|package|Creates a JAR file (or WAR file for web projects) containing the files in *src/main/scala*, *src/main/java*, and resources in *src/main/resources*|
+|package-doc|Creates a JAR file containing documentation generated from your Scala source code|
+|publish|Publishes your project to a remote repository|
+|publish-local|Publishes your project to a local Ivy repository|
+|reload|Reloads the build definition files (build.sbt, project/*.scala, and project/*.sbt), which is necessary if you change them while you’re in an interactive SBT session.|
+|run|Compiles your code, and runs the `main` class from your project.|
+|test|Compiles and run all tests|
+|update|Updates external dependencies|
+
+### The last command
+The `last` command prints logging info for the last command that was executed. This can help you understand what’s happening, including understanding why something is being recompiled over and over when using incremental compilation.
+
+## 18.3 Running Tests with SBT and ScalaTest
+Create a new SBT project directory structure as shown in **Recipe 18.1**, and then add the ScalaTest library dependency to your *build.sbt* file.
+
+Add your Scala source code under the *src/main/scala* folder, add your tests under the *src/test/scala* folder, and then run the tests with the SBT `test` command.
+
+Here's an example of a test file named *HelloTests.scala* in the *src/test/scala* directory of your project:
+```
+package com.alvinalexander.testproject
+
+import org.scalatest.FunSuite
+
+class HelloTests extends FunSuite {
+  test("the name is set correctly in constructor") {
+    val p = Person("Barney Rubble")
+    assert(p.name == "Barney Rubble")
+  }
+
+  test("a Person's name can be changed") {
+    val p = Person("Chad Johnson")
+    p.name = "Ochocinco"
+    assert(p.name == "Ochocinco")
+  }
+}
+```
+
+## 18.4 Managing Dependencies with SBT
+Let's say you want to use one or more external libraries in your Scala/SBT projects.
+
+You can use both managed and unmanaged dependencies in your SBT projects.
+
+If you have JAR files (*unmanaged* dependencies) that you want to use in your project, simply copy them to the *lib* folder in the root directory and SBT will find them automatically. If those JARs depend on other JAR files, you’ll have to download those other JAR files and copy them to the lib directory as well.
+
+If you have a single *managed* dependency, add a `libraryDependencies` line to your *build.sbt* file.
+To add multiple managed dependencies to your project, define them as a `Seq` in your *build.sbt* file.
+
+A *managed dependency* is a dependency that’s managed by your build tool, in this case,
+SBT. In this situation, if library a.jar depends on b.jar, and that library depends on
+c.jar, and those JAR files are kept in an Ivy/Maven repository along with this relationship
+information, then all you have to do is add a line to your build.sbt file stating that you
+want to use a.jar. The other JAR files will be downloaded and included into your project
+automatically.
