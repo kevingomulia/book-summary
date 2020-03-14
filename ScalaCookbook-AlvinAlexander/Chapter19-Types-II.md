@@ -200,4 +200,111 @@ As shown in the examples, one benefit of a type class is that you can add behavi
 
 For instance, in the first example, the `add` method takes `Numeric` types, and it works for all numeric types. Also, the `add` method is type safe, so if you attempted to pass a `String` into it, it won't compile.
 
-## 19.8 Building Functionality with Types 
+## 19.8 Building Functionality with Types
+
+### Example 1: Creating a Timer
+First, let's create a timer that looks like a control structure, and works like the Unix time command.
+
+On Unix, you can run a `time` command to see how long commands take to execute:
+```
+$ time find . -name "*.scala"
+```
+You can create a similar `timer` method in Scala:
+```
+val (result, time) = timer(someAlgorithm)
+println(s"result: $result, time: $time)
+```
+In this example, the `timer` runs a method called `someAlgorithm`, and then returns the result of the algorithm along with its execution time.
+
+The `timer` code involves the use of a generic type parameter:
+```
+def timer[A](blockOfCode: => A) = {
+  val startTime = System.nanoTime
+  val result = blockOfCode
+  val stopTime = System.nanoTime
+  val delta = stopTime - startTime
+  (result, delta/1000000d)
+}
+```
+The `timer` method uses Scala's *call-by-name* syntax to accept a block of code as a parameter. Rather than declare a specific return type from the method, you declare the return type to be a generic type parameter.
+
+This is a simple use of specifying a generic type in a noncollection class.
+
+### Example 2: Writing Your Own "Try" Classes
+Before Scala 2.10, there was no such thing as the `Try`, `Success`, and `Failure` classes in *scala.util*. Previously, you have to write your own solution that you called `Attempt`, `Succeeded` and `Failed` that you can use like this:
+```
+val x = Attempt("10".toInt) //  Succeeded(10)
+val y = Attempt("10A".toInt) // Failed(Exception)
+```
+Firstly, you'll need a class named `Attempt` in *Attempt.scala*:
+```
+// version 1
+sealed class Attempt[A]
+
+object Attempt {
+  def apply[A](f: => A): Attempt[A] =
+    try {
+      val result = f
+      return Succeeded(result)
+    } catch {
+      case e: Exception => Failed(e)
+    }
+}
+
+final case class Failed[A](val exception: Throwable) extends Attempt[A]
+final case class Succeeded[A](value: A) extends Attempt[A]
+```
+Similar to the previous `timer` code, the `apply` method takes a call-by-name parameter, and the return type is specified as a generic type parameter. Because `apply` returns a type of `Attempt`, it's necessary there; because `Failed` and `Succeeded` extend `Attempt`, it's propagated there as well.
+
+While this lets you write the basic `x` and `y` examples, to be really useful, your API needs a new method named `getOrElse` that lets you get the information from the result, whether that result happens to be of type `Succeeded` or `Failed`.
+
+Let's add it to our code:
+```
+// version 2
+sealed abstract class Attempt[A] {
+  def getOrElse[B >: A](default: => B): B = if (isSuccess) get else default
+  var isSuccess = false
+  def get : A
+}
+
+object Attempt {
+  def apply[A](f: => A): Attempt[A] =
+    try {
+      val result = f
+      Succeeded(result)
+    } catch {
+      case e: Exception => Failed(e)
+    }
+}
+
+final case class Failed[A](val exception: Throwable) extends Attempt[A] {
+  isSuccess = false
+  def get: A = throw exception
+}
+
+final case class Succeeded[A](result: A) extends Attempt[A] {
+  isSuccess = true
+  def get = result
+}
+```
+
+The variable `isSuccess` is added to `Attempt` and it can be set in `Succeeded` or `Failed` method. An abstract method named `get` is also declared in `Attempt` so it can be implemented in two subclasses. These changes let the `getOrElse` method in `Attempt` to work.
+
+Most importantly is the `getOrElse` method signature:
+```
+def getOrElse[B >: A](default: => B): B = if (isSuccess) get else default
+```
+Because of the way `getOrElse` works, it can either return the type `A`, which is the result of the expression, or type `B`, which the user supplies.
+
+In Scala 2.10, the `getOrElse` method declared in `Try`:
+```
+def getOrElse[U >: T](default: => T): T = if (isSuccess) get else default
+```
+The `map` method declared in `Success` shows how to define a call-by-name parameter that transforms a type `T` to a type `U`:
+```
+def map[U](f: T => U): Try[U] = Try[U](f(value))
+```
+Its `flatten` method uses the `<:<` symbol that wasn't covered in this chapter. When used as `A <:< B`, it declares that "A must be a subtype of B". Here's how it's used in the `Success` class:
+```
+def flatten[U](implicit ev: T <:< Try[U]): Try[U] = value
+```
