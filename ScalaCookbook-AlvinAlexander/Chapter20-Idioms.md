@@ -189,3 +189,17 @@ object Stock {
 ```
 
 ## 20.2 Prefer Immutable Objects
+There are two components to this:
+- Prefer immutable collections. For instance, use immutable sequences like `List` and `Vector` before reaching for the mutable `ArrayBuffer`
+- Prefer immutable variables (`val` over `var`)
+
+There are at least 2 major benefits to using immutable variables (`val`) and immutable collections:
+- They represent a form of defensive coding, keeping your data from being changed accidentally.
+- They're easier to reason about.
+
+The second benefit: When using actors and concurrency, you can pass around immutable collections, I can pass them around freely without any concern that another thread will modify the collection.
+
+## 20.3 Think "Expression-Oriented Programming"
+In Scala, writing *expressions* is key, and this recipe will tell you the benefits of expression-oriented programming (EOP) philosophy.
+
+To understand EOP, you have to understand the difference between a *statement* and an *expression*. 
