@@ -202,4 +202,179 @@ The second benefit: When using actors and concurrency, you can pass around immut
 ## 20.3 Think "Expression-Oriented Programming"
 In Scala, writing *expressions* is key, and this recipe will tell you the benefits of expression-oriented programming (EOP) philosophy.
 
-To understand EOP, you have to understand the difference between a *statement* and an *expression*. 
+To understand EOP, you have to understand the difference between a *statement* and an *expression*.
+
+- Statements do not return results, and are executed only for their side effects (e.g. `order.calculateTaxes()`, `order.updatePrices()`)
+- Expressions always return a result, and often do not have side effects (e.g. `val tax = calculateTax(order)`, `val price = calculatePrice(order)`)
+
+An EOP language is a programming language where every (or nearly every) construction is an expression, and thus yields a value.
+
+From **Recipe 20.1**, we have this design:
+```
+class Stock (var symbol: String,
+             var company: String,
+             var price: String,
+             var volume: String,
+             var high: String,
+             var low: String) {
+
+  var html: String = _
+  def buildUrl(stockSymbol: String): String = { ... }
+  def getUrlContent(url: String):String = { ... }
+  def setPriceUsingHtml() { this.price = ... }
+  def setVolumeUsingHtml() { this.volume = ... }
+  def setHighUsingHtml() { this.high = ... }
+  def setLowUsingHtml() { this.low = ... }
+}
+```
+
+Using this class would result in code like this:
+```
+val stock = new Stock("GOOG", "Google", "", "", "", "")
+val url = buildUrl(stock.symbol)
+stock.html = stock.getUrlContent(url)
+
+// a series of calls on an object (a.k.a. statements)
+stock.setPriceUsingHtml
+stock.setVolumeUsingHtml
+stock.setHighUsingHtml
+stock.setLowUsingHtml
+```
+
+All of these "set" methods extract data from the HTML page, and then update the fields in the current object.
+
+After the first two lines, this code is not expression-oriented at all; it's a series of calls on an object to mutate the class fields, based on other internal data. These are statements, not expressions, since they don't yield values.
+
+To make it expression-oriented, we can refactor it to be something like this:
+```
+// a series of expressions
+val url = StockUtils.buildUrl(symbol)
+val html = NetUtils.getUrlContent(url)
+val price = StockUtils.getPrice(html)
+val volume = StockUtils.getVolume(html)
+val high = StockUtils.getHigh(html)
+val low = StockUtils.getLow(html)
+val date = DateUtils.getDate
+val stockInstance = StockInstance(symbol, date, price, volume, high, low)
+```
+Writing expressions like this is a feature of functional programming languages, and Scala makes using them feel natural and intuitive, and also results in concise, expressive code.
+
+### Benefits
+- Code is easier to reason about since there are no side effects.
+- Also, easier to test
+- EOP results in concise, expressive code.
+- Expressions can often be executed in any order. This lets you execute expressions in parallel, potentially increasing performance.
+
+## 20.4 Use Match Expressions and Pattern Matching
+Match expressions and pattern matching are a major feature of the Scala programming language. The most obvious uses are:
+- as a replacement for the Java `switch` statement
+- To replace extensive `if/else` statements
+
+Other uses:
+- In `try/catch` expressions
+- As the body of a function or method
+- With the `Option/Some/None` coding pattern
+- In the `receive` method of actors.
+
+### Replacement for the Java switch statement and unwieldy if/then statements
+**Recipe 3.8** showed a match expression can be used like a Java `switch` statement.
+```
+val month = i match {
+  case 1 => "January"
+  case 2 => "February"
+
+  // more months here ...
+
+  case 11 => "November"
+  case 12 => "December"
+  case _ => "Invalid month" // the default, catch-all
+}
+```
+
+Similarly, it can be used to replace the unwieldy `if/then/else` statements:
+```
+i match {
+  case 1 | 3 | 5 | 7 | 9 => println("odd")
+  case 2 | 4 | 6 | 8 | 10 => println("even")  
+}
+```
+
+### In try/catch expressions
+The following example shows how to write a `try/catch` expression that returns an `Option` when lines are successfully read from a file, and `None` if an exception is thrown during the file-reading process:
+```
+def readTextFile(filename: String): Option[List[String]] = {
+  try {
+    Some(Source.fromFile(filename).getLines.toList)
+  } catch {
+    case e: Exception => None
+  }
+}
+```
+To catch multiple exceptions, list the exception types in the `catch` clause, just like a match expression:
+```
+def readTextFile(filename: String): Option[List[String]] = {
+  try {
+    Some(Source.fromFile(filename).getLines.toList)
+  } catch {
+    case ioe: IOException =>
+      logger.error(ioe)
+      None
+    case fnf: FileNotFoundException =>
+      logger.error(fnf)
+      None
+  }
+}
+```
+### As the body of a function or method
+In general, a match expression used as the body of a function will accept a parameter as input, match against that parameter, and return a value:
+```
+def getClassAsString(x: Any):String = x match {
+  case s: String => "String"
+  case i: Int => "Int"
+  case l: List[_] => "List"
+  case p: Person => "Person"
+  case Dog() => "That was a Dog"
+  case Parrot(name) => s"That was a Parrot, name = $name"
+  case _ => "Unknown"
+}
+```
+As shown in **Recipe 9.8**, a match expression can also be used to create a partial function:
+```
+val divide: PartialFunction[Int, Int] = {
+  case d: Int if d != 0 => 42 / d
+}
+```
+
+### Use with Option/Some/None
+```
+def toInt(s: String): Option[Int] = {
+  try {
+    Some(s.toInt)
+  } catch {
+    case e: Exception => None
+  }
+}
+```
+You can handle the result from `toInt` with a match expression:
+```
+toInt(aString) match {
+  case Some(i) => println(i)
+  case None => println("Error: Could not convert String to Int")
+}
+```
+
+### In actors
+Match expressions are baked into actors as the way to handle incoming messages:
+```
+class SarahsBrain extends Actor {
+  def receive = {
+  case StartMessage => handleStartMessage
+  case StopMessage => handleStopMessage
+  case SetMaxWaitTime(time) => helper ! SetMaxWaitTime(time)
+  case SetPhrasesToSpeak(phrases) => helper ! SetPhrasesToSpeak(phrases)
+  case _ => log.info("Got something unexpected.")
+  }
+  
+  // other code here ...
+}
+```
