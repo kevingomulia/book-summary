@@ -1,4 +1,4 @@
-# Chapter 19 - Types
+# Chapter 19 - Types - Part I
 
 This chapter provides recipes for the most common problems you'll encounter, but if you need to go deeper, read  *Programming in Scala*.
 
@@ -266,3 +266,20 @@ This code won't compile because of the conflict built up in this situation:
 - `makeDogsSpeak` is defined to accept a parameter of type `ArrayBuffer[Dog]`
 - You're attempting to pass in `superDogs`, whose type is `ArrayBuffer[SuperDog]`
 - If the compiler allowed this, `makeDogsSpeak` could replace `SuperDog` elements in `superDogs` with plain old Dog elements. This can’t be allowed.
+
+One of the reasons this problem occurs is that `ArrayBuffer` elements can be mutated. If you want to write a method to make all `Dog` types **and** subtypes speak, define it to accept a collection of immutable elements, such as a `List`, `Seq`, or `Vector`.
+
+### The take-away
+The elements of the `Array`, `ArrayBuffer`, and `ListBuffer` classes can be mutated, and they're all defined with invariant type parameters:
+```
+class Array[T]
+class ArrayBuffer[A]
+class ListBuffer[A]
+```
+Conversely, collections classes that are immutable identify their generic type parameters differently, with the `+` symbol, as shown here:
+```
+class List[+T]
+class Vector[+A]
+trait Seq[+A]
+```
+The `+` symbol used on the type parameters of the immutable collections defines their parameters to be *covariant*. Because their elements can't be mutated, adding this symbol makes them more flexible.
